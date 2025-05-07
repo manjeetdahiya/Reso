@@ -27,6 +27,18 @@ class WorkflowContext:
         with open(self._get_checkpoint_path(step_id), "w") as f:
             json.dump(result, f)
 
+    def set_status(self, status):
+        path = self.checkpoint_dir / "status.json"
+        with open(path, "w") as f:
+            json.dump({"status": status}, f)
+
+    def get_status(self):
+        path = self.checkpoint_dir / "status.json"
+        if path.exists():
+            with open(path) as f:
+                return json.load(f).get("status")
+        return None
+
     async def call(self, activity_fn, **kwargs):
         step_id = self._step_key(activity_fn.__name__, kwargs)
 
