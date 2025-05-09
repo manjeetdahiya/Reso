@@ -36,3 +36,16 @@ class Storage:
             with open(path) as f:
                 return json.load(f).get("status")
         return None
+
+    def list_workflows(self):
+        workflows = []
+        if not self.checkpoint_dir.exists():
+            return workflows
+        for wf_dir in self.checkpoint_dir.iterdir():
+            if wf_dir.is_dir():
+                status = self.get_status(wf_dir.name)
+                workflows.append({
+                    "workflow_id": wf_dir.name,
+                    "status": status
+                })
+        return workflows
