@@ -1,10 +1,14 @@
 from src.orchestrator.context import WorkflowContext
 from src.storage.storage import Storage
+from fastapi import HTTPException, Request
+from src.executor.server import Server
 
 class Executor:
-    def __init__(self, workflow_mapping, storage):
-        self.workflow_mapping = workflow_mapping
+    # get storage from the orchestrator
+    def __init__(self, storage=Storage()):
         self.storage = storage
+        self.server = Server(self)
+        self.workflow_mapping = {}
 
     def register_workflow(self, workflow_name, workflow_func):
         self.workflow_mapping[workflow_name] = workflow_func

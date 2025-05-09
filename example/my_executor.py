@@ -1,7 +1,7 @@
-from src.executor.server import Server
+from src.executor.executor import Executor
 from example.my_workflow import my_workflow
 
-# just have executor and server in it
-server = Server({'my_workflow': my_workflow})
+executor = Executor()
+executor.register_workflow('my_workflow', my_workflow)
 
-app = server.app
+app = executor.server.app
