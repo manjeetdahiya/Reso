@@ -1,0 +1,38 @@
+import json
+from pathlib import Path
+
+class Storage:
+    def __init__(self, checkpoint_dir="checkpoints"):
+        self.checkpoint_dir = Path(checkpoint_dir)
+        self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+
+    def get_checkpoint_path(self, workflow_id, checkpoint_id):
+        workflow_dir = self.checkpoint_dir / workflow_id
+        workflow_dir.mkdir(parents=True, exist_ok=True)
+        return workflow_dir / f"{checkpoint_id}.json"
+
+    def load_checkpoint(self, workflow_id, step_id):
+        path = self.get_checkpoint_path(workflow_id, step_id)
+        if path.exists():
+            with open(path) as f:
+                return json.load(f)
+        return None
+
+    def save_checkpoint(self, workflow_id, step_id, result):
+        with open(self.get_checkpoint_path(workflow_id, step_id), "w") as f:
+            json.dump(result, f)
+
+    def set_status(self, workflow_id, status):
+        workflow_dir = self.checkpoint_dir / workflow_id
+        workflow_dir.mkdir(parents=True, exist_ok=True)
+        path = workflow_dir / "status.json"
+        with open(path, "w") as f:
+            json.dump({"status": status}, f)
+
+    def get_status(self, workflow_id):
+        workflow_dir = self.checkpoint_dir / workflow_id
+        path = workflow_dir / "status.json"
+        if path.exists():
+            with open(path) as f:
+                return json.load(f).get("status")
+        return None

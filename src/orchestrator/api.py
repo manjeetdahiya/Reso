@@ -2,8 +2,8 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import asyncio
 import uvicorn
-from workflows_manager import WorkflowsManager
-from test_workflow import test_workflow
+from src.orchestrator.workflows_manager import WorkflowsManager
+from src.orchestrator.test_workflow import test_workflow
 import os
 import json
 from pathlib import Path
@@ -22,7 +22,7 @@ class WorkflowInfo(BaseModel):
     status: str
 
 # Instantiate and register workflows
-workflows_manager = WorkflowsManager(workflow_mapping={})
+workflows_manager = WorkflowsManager(workflow_mapping={}, storage_api_url="http://localhost:8009")
 workflows_manager.register_workflow('test_workflow', test_workflow)
 
 @app.post("/workflow")
@@ -39,6 +39,6 @@ async def list_workflows():
 async def get_workflow(workflow_id: str):
     return await workflows_manager.get_workflow_status(workflow_id)
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("api:app", host="127.0.0.1", port=8001, reload=True)
+# if __name__ == "__main__":
+#     import uvicorn
+#     uvicorn.run("api:app", host="127.0.0.1", port=8001, reload=True)
