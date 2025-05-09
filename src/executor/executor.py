@@ -11,7 +11,6 @@ class Executor:
 
     async def execute_workflow(self, workflow_id, workflow_name, input):
         context = WorkflowContext(workflow_id, self.storage)
-        assert workflow_name in self.workflow_mapping, f"Workflow {workflow_name} not found"
         try:
             context.set_status("active")
             result = await self.workflow_mapping[workflow_name](context, **input)

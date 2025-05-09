@@ -14,7 +14,7 @@ class WorkflowRequest(BaseModel):
 
 @app.on_event("startup")
 async def startup_event():
-    storage = Storage(checkpoint_dir="checkpoints")
+    storage = Storage()
     workflows_manager = WorkflowsManager(workflow_mapping={}, storage=storage)
     workflows_manager.register_workflow('test_workflow', test_workflow)
     app.state.storage = storage

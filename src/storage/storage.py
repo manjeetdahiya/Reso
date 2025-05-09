@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 class Storage:
-    def __init__(self, checkpoint_dir="checkpoints"):
+    def __init__(self, checkpoint_dir=".checkpoints"):
         self.checkpoint_dir = Path(checkpoint_dir)
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
