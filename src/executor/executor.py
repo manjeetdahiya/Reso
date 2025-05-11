@@ -2,12 +2,18 @@ from src.orchestrator.context import WorkflowContext
 from src.storage.storage import Storage
 from fastapi import HTTPException, Request
 from src.executor.server import Server
+import httpx
 
 class Executor:
-    # get storage from the orchestrator
-    def __init__(self, storage=Storage()):
-        self.storage = storage
+    def __init__(self, orchestrator_server):
+        self.orchestrator_server = orchestrator_server
+        
+        self.storage = Storage()
+        response = httpx.get(self.orchestrator_server + "/storage_config")
+        self.storage.set_config(response.json())
+        
         self.server = Server(self)
+
         self.workflow_mapping = {}
 
     def register_workflow(self, workflow_name, workflow_func):

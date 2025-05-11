@@ -49,3 +49,11 @@ class Storage:
                     "status": status
                 })
         return workflows
+
+    def set_config(self, config: dict):
+        self.checkpoint_dir = config.get("checkpoint_dir")
+
+    def get_config(self):
+        return {
+            "checkpoint_dir": str(self.checkpoint_dir)
+        }

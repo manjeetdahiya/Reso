@@ -3,7 +3,7 @@ from pydantic import BaseModel
 import asyncio
 from src.storage.storage import Storage
 from src.orchestrator.workflows_manager import WorkflowsManager
-from src.orchestrator.test_workflow import test_workflow
+from src.orchestrator.orchestrator import Orchestrator
 
 app = FastAPI()
 
@@ -14,9 +14,9 @@ class WorkflowRequest(BaseModel):
 
 @app.on_event("startup")
 async def startup_event():
+    orchestrator = Orchestrator()
     storage = Storage()
     workflows_manager = WorkflowsManager(workflow_mapping={}, storage=storage)
-    workflows_manager.register_workflow('test_workflow', test_workflow)
     app.state.storage = storage
     app.state.workflows_manager = workflows_manager
 
@@ -40,3 +40,7 @@ async def get_workflow(workflow_id: str, request: Request):
         return {"workflow_id": workflow_id, "status": status}
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+@app.get("/storage_config")
+async def get_storage_config():
+    return app.state.storage.get_config()
