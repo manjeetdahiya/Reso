@@ -1,25 +1,31 @@
-from src.orchestrator.context import WorkflowContext
+from src.executor.context import WorkflowContext
 from src.storage.storage import Storage
-from fastapi import HTTPException, Request
 from src.executor.server import Server
 import httpx
 
 class Executor:
-    def __init__(self, orchestrator_server):
+    def __init__(self, orchestrator_server, executor_url):
         self.orchestrator_server = orchestrator_server
+        self.executor_url = executor_url
         
         self.storage = Storage()
         response = httpx.get(self.orchestrator_server + "/storage_config")
         self.storage.set_config(response.json())
-        
-        self.server = Server(self)
 
+        httpx.post(self.orchestrator_server + "/register_executor", json={"executor_url": executor_url})
+
+        self.server = Server(self)
         self.workflow_mapping = {}
 
     def register_workflow(self, workflow_name, workflow_func):
         self.workflow_mapping[workflow_name] = workflow_func
+        httpx.post(self.orchestrator_server + "/register_workflow", json={
+            "executor_url": self.executor_url,
+            "workflow_name": workflow_name
+        })
 
     async def execute_workflow(self, workflow_id, workflow_name, input):
+        print(f"Executing workflow {workflow_name} with ID {workflow_id}")
         context = WorkflowContext(workflow_id, self.storage)
         try:
             context.set_status("active")
@@ -42,3 +48,4 @@ class Executor:
 
     def get_active_workflows(self):
         return [w["workflow_id"] for w in self.get_workflows() if w.get("status") == "active"]
+

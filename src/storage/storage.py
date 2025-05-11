@@ -51,7 +51,10 @@ class Storage:
         return workflows
 
     def set_config(self, config: dict):
-        self.checkpoint_dir = config.get("checkpoint_dir")
+        checkpoint_dir = config.get("checkpoint_dir")
+        if checkpoint_dir is not None:
+            from pathlib import Path
+            self.checkpoint_dir = Path(checkpoint_dir)
 
     def get_config(self):
         return {

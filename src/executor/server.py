@@ -22,6 +22,7 @@ class Server:
 
         @self.app.post("/workflow")
         async def start_workflow(req: WorkflowRequest, request: Request):
+            print(f"Starting workflow {req.workflow_name} with ID {req.workflow_id}")
             try:
                 task = asyncio.create_task(self.executor.execute_workflow(req.workflow_id, req.workflow_name, req.input))
                 task.add_done_callback(handle_task_exception)
