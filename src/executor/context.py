@@ -22,6 +22,10 @@ class WorkflowContext:
         self.storage.save_checkpoint(self.workflow_id, step_id, result)
         return result
 
+    def submit_workflow(self, workflow_name, input):
+        self.storage.set_status(self.workflow_id, "SUBMITTED")
+        self.storage.set_workflow_info(self.workflow_id, workflow_name, input)
+
     def set_status(self, status):
         self.storage.set_status(self.workflow_id, status)
 

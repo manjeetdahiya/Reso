@@ -60,3 +60,23 @@ class Storage:
         return {
             "checkpoint_dir": str(self.checkpoint_dir)
         }
+
+    def set_workflow_info(self, workflow_id, workflow_name, input):
+        workflow_dir = self.checkpoint_dir / workflow_id
+        workflow_dir.mkdir(parents=True, exist_ok=True)
+        path = workflow_dir / "info.json"
+        with open(path, "w") as f:
+            json.dump({
+                "workflow_name": workflow_name,
+                "input": input
+            }, f)
+    
+    def get_workflow_info(self, workflow_id):
+        workflow_dir = self.checkpoint_dir / workflow_id
+        path = workflow_dir / "info.json"
+        if path.exists():
+            with open(path) as f:
+                return json.load(f)
+        return None
+    
+    

@@ -4,8 +4,6 @@ import asyncio
 
 class WorkflowRequest(BaseModel):
     workflow_id: str
-    workflow_name: str
-    input: dict = {}
 
 class Server:
     def __init__(self, executor):
@@ -22,9 +20,8 @@ class Server:
 
         @self.app.post("/workflow")
         async def start_workflow(req: WorkflowRequest, request: Request):
-            print(f"Starting workflow {req.workflow_name} with ID {req.workflow_id}")
             try:
-                task = asyncio.create_task(self.executor.execute_workflow(req.workflow_id, req.workflow_name, req.input))
+                task = asyncio.create_task(self.executor.execute_workflow(req.workflow_id))
                 task.add_done_callback(handle_task_exception)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=str(e))

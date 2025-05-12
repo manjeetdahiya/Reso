@@ -24,15 +24,22 @@ class Executor:
             "workflow_name": workflow_name
         })
 
-    async def execute_workflow(self, workflow_id, workflow_name, input):
-        print(f"Executing workflow {workflow_name} with ID {workflow_id}")
+    async def execute_workflow(self, workflow_id):
         context = WorkflowContext(workflow_id, self.storage)
+        wf_info = context.storage.get_workflow_info(workflow_id)
+        workflow_name = wf_info["workflow_name"]
+        input = wf_info["input"]
+        
+        if workflow_name not in self.workflow_mapping:
+            raise Exception(f"Workflow {workflow_name} not registered")
+        
+        workflow_func = self.workflow_mapping[workflow_name]
         try:
-            context.set_status("active")
-            result = await self.workflow_mapping[workflow_name](context, **input)
-            context.set_status("completed")
+            context.set_status("RUNNING")
+            result = await workflow_func(context, **input)
+            context.set_status("COMPLETED")
         except Exception:
-            context.set_status("failed")
+            context.set_status("ERROR")
             raise
         print(f"Workflow {workflow_id} completed with result: {result}")
 

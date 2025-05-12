@@ -1,4 +1,5 @@
 from src.storage.storage import Storage
+from src.executor.context import WorkflowContext
 import httpx
 
 class Orchestrator:
@@ -17,21 +18,19 @@ class Orchestrator:
         self.executors_map[executor_url]["workflows"].append(workflow_name)
 
     def start_workflow(self, workflow_id, workflow_name, input):
+        self._submit_workflow(workflow_id, workflow_name, input)
+
         executor_url = self.get_executor_for_workflow(workflow_name)
-        print(f"Starting workflow {workflow_name} with ID {workflow_id} on executor {executor_url}")
         if executor_url:
-            httpx.post(f"{executor_url}/workflow", json={
-                "workflow_id": workflow_id,
-                "workflow_name": workflow_name,
-                "input": input
-            })
-            self.workflow_execution_mapping[workflow_id] = {
-                "executor_url": executor_url,
-                "workflow_name": workflow_name,
-                "input": input
-            }
+            payload = {"workflow_id": workflow_id}
+            httpx.post(f"{executor_url}/workflow", json=payload)
+            self.workflow_execution_mapping[workflow_id] = executor_url
         else:
             raise Exception(f"No executor found for workflow {workflow_name}")
+
+    def _submit_workflow(self, workflow_id, workflow_name, input):
+        ctx  = WorkflowContext(workflow_id=workflow_id, storage=self.storage)
+        ctx.submit_workflow(workflow_name, input)
 
     async def get_workflow_status(self, workflow_id):
         status = self.storage.get_status(workflow_id)
