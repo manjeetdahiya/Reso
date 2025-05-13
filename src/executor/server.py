@@ -40,3 +40,9 @@ class Server:
                 return {"workflow_id": workflow_id, "status": status}
             except Exception as e:
                 raise HTTPException(status_code=404, detail=str(e))
+            
+        @self.app.on_event("startup")
+        async def startup_event():
+            print(f"Starting executor server...")
+            # Any startup logic can be added here
+            pass

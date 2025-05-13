@@ -1,6 +1,10 @@
 from src.storage.storage import Storage
 from src.executor.context import WorkflowContext
 import httpx
+import logging
+import asyncio
+
+logging.basicConfig(level=logging.DEBUG)
 
 class Orchestrator:
     def __init__(self):
@@ -8,25 +12,44 @@ class Orchestrator:
         self.executors_map = {}
         self.workflow_execution_mapping = {}
 
-    def register_executor(self, executor_url):
-        if executor_url not in self.executors_map:
-            self.executors_map[executor_url] = {"workflows": []}
+    def register_executor(self, executor_server):
+        if executor_server in self.executors_map:
+            logging.warning(f"Executor {executor_server} already registered")
+        self.executors_map[executor_server] = {"workflows": []}
 
-    def register_workflow(self, executor_url, workflow_name):
-        if executor_url not in self.executors_map:
-            self.executors_map[executor_url] = {"workflows": []}
-        self.executors_map[executor_url]["workflows"].append(workflow_name)
+    def register_workflow(self, executor_server, workflow_name):
+        logging.info(f"Registering workflow {workflow_name} on executor {executor_server}")
+        if executor_server not in self.executors_map:
+            self.executors_map[executor_server] = {"workflows": []}
+        if workflow_name not in self.executors_map[executor_server]["workflows"]:
+            self.executors_map[executor_server]["workflows"].append(workflow_name)
+            asyncio.create_task(self._start_pending_workflows(workflow_name))
+
+    async def _start_pending_workflows(self, workflow_name):
+        wfs = self.storage.list_workflows()
+        for wf in wfs:
+            status = wf["status"]
+            workflow_id = wf["workflow_id"]
+            workflow_name_stored = self.storage.get_workflow_info(workflow_id)["workflow_name"]
+            if workflow_name_stored == workflow_name and status != "COMPLETED":
+                logging.info(f"Starting pending workflow {workflow_id} for {workflow_name}")
+                self._start_workflow_on_executor(workflow_id, workflow_name)
 
     def start_workflow(self, workflow_id, workflow_name, input):
         self._submit_workflow(workflow_id, workflow_name, input)
+        self._start_workflow_on_executor(workflow_id, workflow_name)
 
-        executor_url = self.get_executor_for_workflow(workflow_name)
-        if executor_url:
-            payload = {"workflow_id": workflow_id}
-            httpx.post(f"{executor_url}/workflow", json=payload)
-            self.workflow_execution_mapping[workflow_id] = executor_url
+    def _start_workflow_on_executor(self, workflow_id, workflow_name):
+        executor_server = self.get_executor_for_workflow(workflow_name)
+        if executor_server:
+            try:
+                payload = {"workflow_id": workflow_id}
+                httpx.post(f"{executor_server}/workflow", json=payload)
+                self.workflow_execution_mapping[workflow_id] = executor_server
+            except Exception as e:
+                logging.error(f"Failed to start workflow {workflow_id} on executor {executor_server}: {e}")
         else:
-            raise Exception(f"No executor found for workflow {workflow_name}")
+            logging.error(f"No executor found for workflow {workflow_name}")
 
     def _submit_workflow(self, workflow_id, workflow_name, input):
         ctx  = WorkflowContext(workflow_id=workflow_id, storage=self.storage)
@@ -45,7 +68,7 @@ class Orchestrator:
         return [w["workflow_id"] for w in self.get_workflows() if w.get("status") == "active"]
 
     def get_executor_for_workflow(self, workflow_name):
-        for executor_url, workflows in self.executors_map.items():
+        for executor_server, workflows in self.executors_map.items():
             if workflow_name in workflows["workflows"]:
-                return executor_url
+                return executor_server
         return None

@@ -10,10 +10,10 @@ class WorkflowRequest(BaseModel):
     input: dict = {}
 
 class ExecutorRegisterRequest(BaseModel):
-    executor_url: str
+    executor_server: str
 
 class WorkflowRegisterRequest(BaseModel):
-    executor_url: str
+    executor_server: str
     workflow_name: str
 
 @app.on_event("startup")
@@ -46,22 +46,18 @@ async def get_storage_config():
     return app.state.orchestrator.storage.get_config()
 
 @app.post("/register_executor")
-async def register_executor(req: ExecutorRegisterRequest):
+def register_executor(req: ExecutorRegisterRequest):
     orchestrator = app.state.orchestrator
-    if req.executor_url in orchestrator.executors_map:
-        raise HTTPException(status_code=400, detail="Executor already registered")
-    orchestrator.register_executor(req.executor_url)
-    return {"status": "registered", "executor_url": req.executor_url}
+    orchestrator.register_executor(req.executor_server)
+    return {"status": "registered", "executor_server": req.executor_server}
 
 @app.post("/register_workflow")
 async def register_workflow(req: WorkflowRegisterRequest):
     orchestrator = app.state.orchestrator
-    if req.executor_url not in orchestrator.executors_map:
+    if req.executor_server not in orchestrator.executors_map:
         raise HTTPException(status_code=404, detail="Executor not found")
-    if req.workflow_name in orchestrator.executors_map[req.executor_url]["workflows"]:
-        raise HTTPException(status_code=400, detail="Workflow already registered")
-    orchestrator.register_workflow(req.executor_url, req.workflow_name)
-    return {"status": "workflow registered", "executor_url": req.executor_url, "workflow_name": req.workflow_name}
+    orchestrator.register_workflow(req.executor_server, req.workflow_name)
+    return {"status": "workflow registered", "executor_server": req.executor_server, "workflow_name": req.workflow_name}
 
 @app.get("/executors")
 async def list_executors():

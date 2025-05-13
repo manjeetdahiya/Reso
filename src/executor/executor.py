@@ -4,23 +4,23 @@ from src.executor.server import Server
 import httpx
 
 class Executor:
-    def __init__(self, orchestrator_server, executor_url):
+    def __init__(self, orchestrator_server, executor_server):
         self.orchestrator_server = orchestrator_server
-        self.executor_url = executor_url
+        self.server = Server(self)
+        self.executor_server = executor_server
         
         self.storage = Storage()
         response = httpx.get(self.orchestrator_server + "/storage_config")
         self.storage.set_config(response.json())
 
-        httpx.post(self.orchestrator_server + "/register_executor", json={"executor_url": executor_url})
+        httpx.post(self.orchestrator_server + "/register_executor", json={"executor_server": executor_server})
 
-        self.server = Server(self)
         self.workflow_mapping = {}
 
     def register_workflow(self, workflow_name, workflow_func):
         self.workflow_mapping[workflow_name] = workflow_func
         httpx.post(self.orchestrator_server + "/register_workflow", json={
-            "executor_url": self.executor_url,
+            "executor_server": self.executor_server,
             "workflow_name": workflow_name
         })
 
