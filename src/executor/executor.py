@@ -42,17 +42,3 @@ class Executor:
             context.set_status("ERROR")
             raise
         print(f"Workflow {workflow_id} completed with result: {result}")
-
-    async def get_workflow_status(self, workflow_id):
-        context = WorkflowContext(workflow_id, self.storage)
-        status = context.get_status()
-        if status is None:
-            raise Exception(f"Workflow {workflow_id} not found")
-        return status
-
-    async def get_workflows(self):
-        return self.storage.list_workflows()
-
-    def get_active_workflows(self):
-        return [w["workflow_id"] for w in self.get_workflows() if w.get("status") == "active"]
-
