@@ -1,2 +1,2 @@
 export PYTHONPATH=.:$PYTHONPATH
-uvicorn example.my_executor:app --reload --port 8009
+uvicorn examples.my_executor:app --reload --port 8009
