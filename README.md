@@ -1,8 +1,17 @@
-# Project Structure
+# Reso: Resumable Orchestration
+- Workflow orchestration
+    - Workflow-as-a-code
+    - Microservice orchestration
+    - Async processing
+- Durable
+- Scalable
 
-This project consists of two main modules:
+## Project Structure
+
+This project consists of three main modules:
 
 - **orchestrator**: Handles workflow orchestration, API endpoints, and workflow management logic.
 - **storage**: Manages data storage and related operations.
+- **executor**: Runs the workflows. There could be multiple executors running on multiple machines.
 
-Both modules are located in the `src/` directory.
+- **examples**: contain sample worflows

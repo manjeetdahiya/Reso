@@ -10,12 +10,18 @@ class Orchestrator:
     def __init__(self):
         self.storage = Storage()
         self.executors_map = {}
-        self.workflow_execution_mapping = {}
 
     def register_executor(self, executor_server):
         if executor_server in self.executors_map:
             logging.warning(f"Executor {executor_server} already registered")
         self.executors_map[executor_server] = {"workflows": []}
+
+    def unregister_executor(self, executor_server):
+        if executor_server in self.executors_map:
+            del self.executors_map[executor_server]
+            logging.info(f"Unregistered executor {executor_server}")
+        else:
+            logging.warning(f"Executor {executor_server} not found")
 
     def register_workflow(self, executor_server, workflow_name):
         logging.info(f"Registering workflow {workflow_name} on executor {executor_server}")
@@ -45,9 +51,9 @@ class Orchestrator:
             try:
                 payload = {"workflow_id": workflow_id}
                 httpx.post(f"{executor_server}/workflow", json=payload)
-                self.workflow_execution_mapping[workflow_id] = executor_server
             except Exception as e:
                 logging.error(f"Failed to start workflow {workflow_id} on executor {executor_server}: {e}")
+                self.unregister_executor(executor_server)
         else:
             logging.error(f"No executor found for workflow {workflow_name}")
 
