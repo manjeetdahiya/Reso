@@ -24,7 +24,7 @@ class Server:
                 print(f"Background workflow task failed: {e}")
 
         @self.app.post("/workflow")
-        async def start_workflow(req: WorkflowRequest, request: Request):
+        async def start_workflow(req: WorkflowRequest):
             try:
                 task = asyncio.create_task(self.executor.execute_workflow(req.workflow_id))
                 task.add_done_callback(handle_task_exception)
@@ -33,7 +33,7 @@ class Server:
             return {"status": "started", "workflow_id": req.workflow_id}
         
         @self.app.post("/event")
-        async def send_event(req: WrokflowEventRequest, request: Request):
+        async def send_event(req: WrokflowEventRequest):
             try:
                 await self.executor.send_event(req.workflow_id, req.event_name, req.value)
             except Exception as e:

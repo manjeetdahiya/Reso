@@ -1,6 +1,10 @@
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 from src.orchestrator.orchestrator import Orchestrator
+import httpx
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
 
 app = FastAPI()
 
@@ -15,6 +19,11 @@ class ExecutorRegisterRequest(BaseModel):
 class WorkflowRegisterRequest(BaseModel):
     executor_server: str
     workflow_name: str
+
+class WrokflowEventRequest(BaseModel):
+    workflow_id: str
+    event_name: str
+    value: str
 
 @app.on_event("startup")
 async def startup_event():
@@ -54,7 +63,7 @@ def register_executor(req: ExecutorRegisterRequest):
 @app.post("/register_workflow")
 async def register_workflow(req: WorkflowRegisterRequest):
     orchestrator = app.state.orchestrator
-    if req.executor_server not in orchestrator.executors_map:
+    if req.executor_server not in orchestrator.executors:
         raise HTTPException(status_code=404, detail="Executor not found")
     orchestrator.register_workflow(req.executor_server, req.workflow_name)
     return {"status": "workflow registered", "executor_server": req.executor_server, "workflow_name": req.workflow_name}
@@ -62,4 +71,17 @@ async def register_workflow(req: WorkflowRegisterRequest):
 @app.get("/executors")
 async def list_executors():
     orchestrator = app.state.orchestrator
-    return {"executors": dict(orchestrator.executors_map)}
+    return {"executors": dict(orchestrator.executors)}
+
+@app.post("/event")
+async def send_event(req: WrokflowEventRequest):
+    try:
+        orchestrator = app.state.orchestrator
+        executor_server = orchestrator.get_executor_for_workflow_id(req.workflow_id)
+        if executor_server:
+            res = httpx.post(f"{executor_server}/event", json=req.dict())  # Remove await
+        else:
+            raise HTTPException(status_code=404, detail="Executor not found for this workflow")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"status": "event sent", "workflow_id": req.workflow_id, 'result': res.text}
