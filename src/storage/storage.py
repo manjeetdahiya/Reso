@@ -20,7 +20,7 @@ class Storage:
 
     def save_checkpoint(self, workflow_id, step_id, result):
         with open(self.get_checkpoint_path(workflow_id, step_id), "w") as f:
-            json.dump(result, f)
+            json.dump({'workflow_id': workflow_id, 'step_id': step_id, 'result': result}, f)
 
     def set_status(self, workflow_id, status):
         workflow_dir = self.checkpoint_dir / workflow_id

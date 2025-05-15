@@ -58,7 +58,7 @@ class Orchestrator:
             logging.error(f"No executor found for workflow {workflow_name}")
 
     def _submit_workflow(self, workflow_id, workflow_name, input):
-        ctx  = WorkflowContext(workflow_id=workflow_id, storage=self.storage)
+        ctx  = WorkflowContext(workflow_id=workflow_id, storage=self.storage, executor=None)
         ctx.submit_workflow(workflow_name, input)
 
     async def get_workflow_status(self, workflow_id):
