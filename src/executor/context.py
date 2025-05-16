@@ -13,6 +13,7 @@ class WorkflowContext:
         self.storage = storage
         self.executor = executor
         self.step_sequence_number = 0
+        self.event_sequence_number = 0
 
     def _step_key(self, fn_name, kwargs):
         hash_input = fn_name + json.dumps(kwargs, sort_keys=True)
@@ -22,14 +23,18 @@ class WorkflowContext:
         self.step_sequence_number += 1
         return self.step_sequence_number
 
+    def _get_event_sequence_number(self):
+        self.event_sequence_number += 1
+        return self.event_sequence_number
+    
     async def call(self, activity_fn, **kwargs):
         # step_id = self._step_key(activity_fn.__name__, kwargs)
         step_id = f"{self._get_step_sequence_number()}"
         cached_result = self.storage.load_checkpoint(self.workflow_id, step_id)
         if cached_result is not None:
-            print(f"[{self.workflow_id}] {activity_fn.__name__} - Skipped")
+            logging.debug(f"[{self.workflow_id}] {activity_fn.__name__} - Skipped")
             return cached_result['result']
-        print(f"[{self.workflow_id}] {activity_fn.__name__} - Running")
+        logging.debug(f"[{self.workflow_id}] {activity_fn.__name__} - Running")
         result = await activity_fn(**kwargs)
         self.storage.save_checkpoint(self.workflow_id, step_id, result)
         return result
@@ -56,10 +61,17 @@ class WorkflowContext:
         step_id = f"{self._get_step_sequence_number()}"
         cached_result = self.storage.load_checkpoint(self.workflow_id, step_id)
         if cached_result is not None:
-            print(f"[{self.workflow_id}] {step_name} - Skipped")
+            logging.debug(f"[{self.workflow_id}] {step_name} - Skipped")
             return cached_result['result']
-        logging.debug(f"[{self.workflow_id}] wait_for_event: {event_name}")
-        value = await self.suspend_until_event(event_name)
+        
+        # check for event in storage
+        event_data = self.storage.load_event(self.workflow_id, self._get_event_sequence_number())
+        if event_data is not None and event_data['event_name'] == event_name:
+            logging.debug(f"[{self.workflow_id}] {step_name} - Event found in storage")
+            value = event_data['event_data']
+        else:
+            logging.debug(f"[{self.workflow_id}] wait_for_event: {event_name}")
+            value = await self.suspend_until_event(event_name)
         self.storage.save_checkpoint(self.workflow_id, step_id, value)
 
     async def suspend_until_event(self, event_name):

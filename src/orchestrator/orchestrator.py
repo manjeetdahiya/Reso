@@ -64,6 +64,12 @@ class Orchestrator:
         ctx  = WorkflowContext(workflow_id=workflow_id, storage=self.storage, executor=None)
         ctx.submit_workflow(workflow_name, input)
 
+    def store_event(self, workflow_id, event_name, event_data):
+        ctx = WorkflowContext(workflow_id=workflow_id, storage=self.storage, executor=None)
+        ctx.event_sequence_number = self.storage.find_event_sequence_number(workflow_id)
+        event_sequence_number = ctx._get_event_sequence_number()
+        ctx.storage.save_event(workflow_id, event_sequence_number, event_name, event_data)
+
     def get_workflow_status(self, workflow_id):
         status = self.storage.get_status(workflow_id)
         if status == None:

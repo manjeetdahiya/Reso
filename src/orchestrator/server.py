@@ -23,7 +23,7 @@ class WorkflowRegisterRequest(BaseModel):
 class WrokflowEventRequest(BaseModel):
     workflow_id: str
     event_name: str
-    value: str
+    event_data: str
 
 @app.on_event("startup")
 async def startup_event():
@@ -92,6 +92,7 @@ async def list_executors(request: Request):
 async def send_event(req: WrokflowEventRequest, request: Request):
     try:
         orchestrator = request.app.state.orchestrator
+        orchestrator.store_event(req.workflow_id, req.event_name, req.event_data)
         executor_server = orchestrator.get_executor_for_workflow_id(req.workflow_id)
         if executor_server:
             res = httpx.post(f"{executor_server}/event", json=req.dict())
