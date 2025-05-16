@@ -8,7 +8,7 @@ class WorkflowRequest(BaseModel):
 class WrokflowEventRequest(BaseModel):
     workflow_id: str
     event_name: str
-    value: str
+    event_data: str
 
 class Server:
     def __init__(self, executor):
@@ -35,7 +35,7 @@ class Server:
         @self.app.post("/event")
         async def send_event(req: WrokflowEventRequest):
             try:
-                await self.executor.send_event(req.workflow_id, req.event_name, req.value)
+                await self.executor.send_event(req.workflow_id, req.event_name, req.event_data)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=str(e))
             return {"status": "event sent", "workflow_id": req.workflow_id}

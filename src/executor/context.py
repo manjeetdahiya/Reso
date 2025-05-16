@@ -60,12 +60,19 @@ class WorkflowContext:
         # step_id = self._step_key(step_name, {})
         step_id = f"{self._get_step_sequence_number()}"
         cached_result = self.storage.load_checkpoint(self.workflow_id, step_id)
+        
+        # check for event in storage
+        # we have to process the events in order even if CP is found
+        seq_nr = self.storage.find_event_sequence_number(self.workflow_id)
+        if seq_nr == 0: # No events recorded yet
+            event_data = None
+        else:       
+            event_data = self.storage.load_event(self.workflow_id, self._get_event_sequence_number())
+
         if cached_result is not None:
             logging.debug(f"[{self.workflow_id}] {step_name} - Skipped")
             return cached_result['result']
         
-        # check for event in storage
-        event_data = self.storage.load_event(self.workflow_id, self._get_event_sequence_number())
         if event_data is not None and event_data['event_name'] == event_name:
             logging.debug(f"[{self.workflow_id}] {step_name} - Event found in storage")
             value = event_data['event_data']
@@ -80,7 +87,7 @@ class WorkflowContext:
 
         if self.workflow_id not in self.executor.event_registry:
             self.executor.event_registry[self.workflow_id] = {}
-        self.executor.event_registry[self.workflow_id][event_name] = future  #TODO multiple events of same name?
-
+        self.executor.event_registry[self.workflow_id][event_name] = future
+        self.set_status("WAITING")
         value = await future
         return value

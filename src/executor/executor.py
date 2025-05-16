@@ -45,7 +45,7 @@ class Executor:
             context.set_result(result)
             logging.debug(f"Workflow {workflow_id} executed successfully")
         except Exception:
-            context.set_status("ERROR")
+            context.set_status("FAILED")
             logging.debug(f"Workflow {workflow_id} failed")
             raise
 
