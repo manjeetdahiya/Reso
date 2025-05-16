@@ -1,12 +1,12 @@
 ## Workflow states
 
-### Execution state
+### Logical state
     1. Submitted
     2. Running
     3. Waiting
-    4. Error
+    4. Failed
     4. Completed
 
-### Hibernation state
-    1. True
-    2. False
+### Execution state
+    1. Active         -   worker available and running
+    2. Hibernated     -   worker not available or hibernated

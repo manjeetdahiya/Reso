@@ -64,7 +64,7 @@ class Orchestrator:
         ctx  = WorkflowContext(workflow_id=workflow_id, storage=self.storage, executor=None)
         ctx.submit_workflow(workflow_name, input)
 
-    async def get_workflow_status(self, workflow_id):
+    def get_workflow_status(self, workflow_id):
         status = self.storage.get_status(workflow_id)
         if status == None:
             raise Exception(f"Workflow {workflow_id} not found")
@@ -97,6 +97,5 @@ class Orchestrator:
                 logging.info(f"Removed mapping for workflow {workflow_id} from executor {executor_server}")
 
     def get_executor_for_workflow_id(self, workflow_id):
-        logging.debug(f'---------------get_executor_for_workflow_id called for {workflow_id}')
         return self.workflow_id_executor_map.get(workflow_id, None)
     

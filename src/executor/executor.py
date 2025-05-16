@@ -42,6 +42,7 @@ class Executor:
             context.set_status("RUNNING")
             result = await workflow_func(context, **input)
             context.set_status("COMPLETED")
+            context.set_result(result)
             logging.debug(f"Workflow {workflow_id} executed successfully")
         except Exception:
             context.set_status("ERROR")

@@ -37,6 +37,21 @@ class Storage:
                 return json.load(f).get("status")
         return None
 
+    def set_result(self, workflow_id, result):
+        workflow_dir = self.checkpoint_dir / workflow_id
+        workflow_dir.mkdir(parents=True, exist_ok=True)
+        path = workflow_dir / "result.json"
+        with open(path, "w") as f:
+            json.dump({"result": result}, f)
+
+    def get_result(self, workflow_id):
+        workflow_dir = self.checkpoint_dir / workflow_id
+        path = workflow_dir / "result.json"
+        if path.exists():
+            with open(path) as f:
+                return json.load(f).get("result")
+        return None
+
     def list_workflows(self):
         workflows = []
         if not self.checkpoint_dir.exists():
