@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 from src.orchestrator.orchestrator import Orchestrator
+from src.executor.server import WorkflowEventRequest
 import httpx
 import logging
 
@@ -19,11 +20,6 @@ class ExecutorRegisterRequest(BaseModel):
 class WorkflowRegisterRequest(BaseModel):
     executor_server: str
     workflow_name: str
-
-class WrokflowEventRequest(BaseModel):
-    workflow_id: str
-    event_name: str
-    event_data: str
 
 @app.on_event("startup")
 async def startup_event():
@@ -89,7 +85,7 @@ async def list_executors(request: Request):
     return {"executors": dict(orchestrator.executors)}
 
 @app.post("/event")
-async def send_event(req: WrokflowEventRequest, request: Request):
+async def send_event(req: WorkflowEventRequest, request: Request):
     try:
         orchestrator = request.app.state.orchestrator
         orchestrator.store_event(req.workflow_id, req.event_name, req.event_data)

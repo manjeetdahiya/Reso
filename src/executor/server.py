@@ -5,7 +5,7 @@ import asyncio
 class WorkflowRequest(BaseModel):
     workflow_id: str
 
-class WrokflowEventRequest(BaseModel):
+class WorkflowEventRequest(BaseModel):
     workflow_id: str
     event_name: str
     event_data: str
@@ -33,7 +33,7 @@ class Server:
             return {"status": "started", "workflow_id": req.workflow_id}
         
         @self.app.post("/event")
-        async def send_event(req: WrokflowEventRequest):
+        async def send_event(req: WorkflowEventRequest):
             try:
                 await self.executor.send_event(req.workflow_id, req.event_name, req.event_data)
             except Exception as e:
