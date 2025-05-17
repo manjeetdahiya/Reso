@@ -88,7 +88,9 @@ async def list_executors(request: Request):
 async def send_event(req: WorkflowEventRequest, request: Request):
     try:
         orchestrator = request.app.state.orchestrator
-        orchestrator.store_event(req.workflow_id, req.event_name, req.event_data)
+        stored = orchestrator.store_event(req.workflow_id, req.event_name, req.event_data)
+        if not stored:
+            raise HTTPException(status_code=404, detail="No waiting event found")
         executor_server = orchestrator.get_executor_for_workflow_id(req.workflow_id)
         if executor_server:
             res = httpx.post(f"{executor_server}/event", json=req.dict())

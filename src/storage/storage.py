@@ -21,11 +21,11 @@ class Storage:
         dir.mkdir(parents=True, exist_ok=True)
         return dir
     
-    def get_step_path(self, workflow_id, seq_number):
-        return self.get_steps_path(workflow_id) / f"{seq_number}.json"
+    def get_step_path(self, workflow_id, step_id):
+        return self.get_steps_path(workflow_id) / f"{step_id}.json"
 
-    def get_event_path(self, workflow_id, seq_number):
-        return self.get_events_path(workflow_id) / f"{seq_number}.json"
+    def get_event_path(self, workflow_id, step_id):
+        return self.get_events_path(workflow_id) / f"{step_id}.json"
 
     def get_status_path(self, workflow_id):
         return self.get_workflow_path(workflow_id) / "status.json"
@@ -46,41 +46,40 @@ class Storage:
         with open(path, "w") as f:
             json.dump(data, f)
    
-    def find_step_sequence_number(self, workflow_id):
-        dir = self.get_steps_path(workflow_id)
-        if not dir.exists():
-            return 0
-        files = sorted([int(f.stem) for f in dir.iterdir() if f.is_file()])
-        return files[-1] if len(files) > 0 else 0
+    def load_checkpoint(self, workflow_id, step_id):
+        path = self.get_step_path(workflow_id, step_id)
+        return self.read_json(path)
 
-    def find_event_sequence_number(self, workflow_id):
-        dir = self.get_events_path(workflow_id)
-        if not dir.exists():
-            return 0
-        files = sorted([int(f.stem) for f in dir.iterdir() if f.is_file()])
-        return files[-1] if len(files) > 0 else 0
-
-    def load_checkpoint(self, workflow_id, seq_number):
-        path = self.get_step_path(workflow_id, seq_number)
-        self.read_json(path)
-
-    def save_checkpoint(self, workflow_id, seq_number, result):
-        self.write_json(self.get_step_path(workflow_id, seq_number), {
+    def save_checkpoint(self, workflow_id, step_id, result):
+        self.write_json(self.get_step_path(workflow_id, step_id), {
             'workflow_id': workflow_id,
-            'seq_number': seq_number,
+            'step_id': step_id,
             'result': result
         })
 
-    def save_event(self, workflow_id, seq_number, event_name, event_data):
-        self.write_json(self.get_event_path(workflow_id, seq_number), {
+    def find_event_logs(self, workflow_id, event_name):
+        dir = self.get_events_path(workflow_id)
+        if not dir.exists():
+            return None
+        ret = []
+        for f in dir.iterdir():
+            if f.is_file():
+                event = self.read_json(f)
+                if event and event['event_name'] == event_name:
+                    ret.append(event)
+        return ret
+    
+    def save_event(self, workflow_id, step_id, event_name, event_data, event_state):
+        self.write_json(self.get_event_path(workflow_id, step_id), {
             'workflow_id': workflow_id,
-            'seq_number': seq_number,
+            'step_id': step_id,
             'event_name': event_name,
-            'event_data': event_data
+            'event_data': event_data,
+            'state': event_state
         })
 
-    def load_event(self, workflow_id, seq_number):
-        path = self.get_event_path(workflow_id, seq_number)
+    def load_event(self, workflow_id, step_id):
+        path = self.get_event_path(workflow_id, step_id)
         return self.read_json(path)
 
     def set_status(self, workflow_id, status):
