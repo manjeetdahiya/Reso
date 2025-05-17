@@ -1,4 +1,5 @@
 * Sleep?
+* retries
 * API calls return and error flags
 * automated testing
 * impl getter/setter
