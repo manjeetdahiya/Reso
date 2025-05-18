@@ -4,7 +4,12 @@ import httpx
 import logging
 import asyncio
 
-logging.basicConfig(level=logging.DEBUG, format='RESO LOG: %(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger('reso')
+logger.setLevel(logging.DEBUG)
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter('RESO %(levelname)s: %(message)s'))
+    logger.addHandler(handler)
 
 class Executor:
     def __init__(self, orchestrator_server, executor_server):
@@ -23,14 +28,10 @@ class Executor:
 
     def register_workflow(self, workflow_name, workflow_func):
         self.workflow_mapping[workflow_name] = workflow_func
-        # httpx.post(self.orchestrator_server + "/register_workflow", json={
-        #     "executor_server": self.executor_server,
-        #     "workflow_name": workflow_name
-        # })
 
     async def _register_workflows(self):
         await asyncio.sleep(1)
-        logging.debug(f"Registering workflows with orchestrator {self.orchestrator_server}")
+        logger.debug(f"Registering workflows with orchestrator {self.orchestrator_server}")
         for workflow_name in self.workflow_mapping:
             httpx.post(self.orchestrator_server + "/register_workflow", json={
                 "executor_server": self.executor_server,
@@ -53,17 +54,17 @@ class Executor:
             result = await workflow_func(context, **input)
             context.set_status("COMPLETED")
             context.set_result(result)
-            logging.debug(f"Workflow {workflow_id} executed successfully")
+            logger.debug(f"Workflow {workflow_id} executed successfully")
         except Exception:
             context.set_status("FAILED")
-            logging.debug(f"Workflow {workflow_id} failed")
+            logger.debug(f"Workflow {workflow_id} failed")
             raise
 
     async def send_event(self, workflow_id, event_name, value):
-        logging.debug(f"Sending event {event_name} to workflow {workflow_id}")
+        logger.debug(f"Sending event {event_name} to workflow {workflow_id}")
         if workflow_id in self.event_registry and event_name in self.event_registry[workflow_id]:
             future = self.event_registry[workflow_id][event_name]
             future.set_result(value)
             del self.event_registry[workflow_id][event_name]
         else:
-            logging.debug(f"No waiting workflow found for event {event_name} in {workflow_id}")
+            logger.debug(f"No waiting workflow found for event {event_name} in {workflow_id}")

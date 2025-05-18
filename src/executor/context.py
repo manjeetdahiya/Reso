@@ -5,7 +5,7 @@ import logging
 import asyncio
 from src.executor.executor import Executor
 
-logging.basicConfig(level=logging.DEBUG, format='RESO LOG: %(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger("reso")
 
 class WorkflowContext:
     def __init__(self, workflow_id, storage, executor):
@@ -26,9 +26,9 @@ class WorkflowContext:
         step_id = self._step_id(step_fn.__name__, step_nr)
         cached_result = self.storage.load_checkpoint(self.workflow_id, step_id)
         if cached_result is not None:
-            logging.debug(f"[{self.workflow_id}] {step_fn.__name__} step_id: {step_id} - Skipped")
+            logger.debug(f"[{self.workflow_id}] {step_fn.__name__} step_id: {step_id} - Skipped")
             return cached_result['result']
-        logging.debug(f"[{self.workflow_id}] {step_fn.__name__} step_id: {step_id} - Running")
+        logger.debug(f"[{self.workflow_id}] {step_fn.__name__} step_id: {step_id} - Running")
         result = await step_fn(**kwargs)
         self.storage.save_checkpoint(self.workflow_id, step_id, result)
         return result
@@ -69,22 +69,22 @@ class WorkflowContext:
         step_id = self._step_id('wait_for_event.event_name', step_nr)
         cached_result = self.storage.load_checkpoint(self.workflow_id, step_id)
         if cached_result is not None:
-            logging.debug(f"[{self.workflow_id}] {step_id} - Skipped")
+            logger.debug(f"[{self.workflow_id}] {step_id} - Skipped")
             return cached_result['result']
         
         event = self.storage.load_event(self.workflow_id, step_id)
         if event is not None and event['event_name'] == event_name and event['state'] == "COMPLETED":
-            logging.debug(f"[{self.workflow_id}] {step_id} - Event found in storage")
+            logger.debug(f"[{self.workflow_id}] {step_id} - Event found in storage")
             event_data = event['event_data']
         else:
-            logging.debug(f"[{self.workflow_id}] wait_for_event: {event_name}")
+            logger.debug(f"[{self.workflow_id}] wait_for_event: {event_name}")
             self.save_event_waiting(event_name, step_id)
             event_data = await self.suspend_until_event(event_name)
         
         self.storage.save_checkpoint(self.workflow_id, step_id, event_data)
 
     async def suspend_until_event(self, event_name):
-        logging.debug(f"[{self.workflow_id}] Suspending until event: {event_name}")
+        logger.debug(f"[{self.workflow_id}] Suspending until event: {event_name}")
         future = asyncio.Future()
         if self.workflow_id not in self.executor.event_registry:
             self.executor.event_registry[self.workflow_id] = {}

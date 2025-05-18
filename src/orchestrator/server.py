@@ -5,7 +5,12 @@ from src.executor.server import WorkflowEventRequest
 import httpx
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger('reso')
+logger.setLevel(logging.DEBUG)
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter('RESO %(levelname)s: %(message)s'))
+    logger.addHandler(handler)
 
 app = FastAPI()
 

@@ -3,6 +3,8 @@ from pydantic import BaseModel
 import asyncio
 import logging
 
+logger = logging.getLogger("reso")
+
 class WorkflowRequest(BaseModel):
     workflow_id: str
 
@@ -22,7 +24,7 @@ class Server:
             try:
                 task.result()
             except Exception as e:
-                print(f"Background workflow task failed: {e}")
+                logger.error(f"Background workflow task failed: {e}")
 
         @self.app.post("/workflow")
         async def start_workflow(req: WorkflowRequest):
@@ -44,4 +46,4 @@ class Server:
         @self.app.on_event("startup")
         async def startup_event():
             asyncio.create_task(self.executor._register_workflows())
-            logging.debug("Executor server started")
+            logger.debug("Executor server started")
