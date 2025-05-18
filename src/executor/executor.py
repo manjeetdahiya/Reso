@@ -2,6 +2,7 @@ from src.storage.storage import Storage
 from src.executor.server import Server
 import httpx
 import logging
+import asyncio
 
 logging.basicConfig(level=logging.DEBUG, format='RESO LOG: %(asctime)s - %(levelname)s - %(message)s')
 
@@ -22,10 +23,19 @@ class Executor:
 
     def register_workflow(self, workflow_name, workflow_func):
         self.workflow_mapping[workflow_name] = workflow_func
-        httpx.post(self.orchestrator_server + "/register_workflow", json={
-            "executor_server": self.executor_server,
-            "workflow_name": workflow_name
-        })
+        # httpx.post(self.orchestrator_server + "/register_workflow", json={
+        #     "executor_server": self.executor_server,
+        #     "workflow_name": workflow_name
+        # })
+
+    async def _register_workflows(self):
+        await asyncio.sleep(1)
+        logging.debug(f"Registering workflows with orchestrator {self.orchestrator_server}")
+        for workflow_name in self.workflow_mapping:
+            httpx.post(self.orchestrator_server + "/register_workflow", json={
+                "executor_server": self.executor_server,
+                "workflow_name": workflow_name
+            })
 
     async def execute_workflow(self, workflow_id):
         from src.executor.context import WorkflowContext

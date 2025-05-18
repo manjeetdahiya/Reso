@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 import asyncio
+import logging
 
 class WorkflowRequest(BaseModel):
     workflow_id: str
@@ -42,6 +43,5 @@ class Server:
 
         @self.app.on_event("startup")
         async def startup_event():
-            print(f"Starting executor server...")
-            # Any startup logic can be added here
-            pass
+            asyncio.create_task(self.executor._register_workflows())
+            logging.debug("Executor server started")

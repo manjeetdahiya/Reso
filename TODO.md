@@ -1,6 +1,8 @@
 * Sleep?
-* retries
+* retries -- why do I need this? can't one impl this in the step?
+* activity? -- again why? focus is on workflows only
 * API calls return and error flags
+* same workflow id can be repeated??
 * automated testing
 * impl getter/setter
 * Implement: Hibernation functions to push to disk

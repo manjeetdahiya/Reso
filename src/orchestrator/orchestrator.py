@@ -34,6 +34,7 @@ class Orchestrator:
             asyncio.create_task(self._start_pending_workflows(workflow_name))
 
     async def _start_pending_workflows(self, workflow_name):
+        await asyncio.sleep(1)
         wfs = self.storage.list_workflows()
         for wf in wfs:
             status = wf["status"]
