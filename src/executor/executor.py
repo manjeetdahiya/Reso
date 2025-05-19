@@ -68,3 +68,6 @@ class Executor:
             del self.event_registry[workflow_id][event_name]
         else:
             logger.debug(f"No waiting workflow found for event {event_name} in {workflow_id}")
+
+    def get_server_app(self):
+        return self.server.app
