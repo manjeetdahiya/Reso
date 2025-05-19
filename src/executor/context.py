@@ -1,5 +1,3 @@
-import json
-import hashlib
 from src.storage.storage import Storage
 import logging
 import asyncio

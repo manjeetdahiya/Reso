@@ -1,4 +1,5 @@
 * event Class
+* WF states enum?
 * API calls return and error flags
 * same workflow id can be repeated??
 * automated testing
