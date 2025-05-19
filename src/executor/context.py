@@ -21,7 +21,7 @@ class WorkflowContext:
         self.step_nr += 1
         return self.step_nr
 
-    async def call(self, step_fn, **kwargs):
+    async def call(self, step_fn, *args, **kwargs):
         step_nr = self._inc_and_get_step_nr()
         step_id = self._step_id(step_fn.__name__, step_nr)
         cached_result = self.storage.load_checkpoint(self.workflow_id, step_id)
@@ -29,7 +29,7 @@ class WorkflowContext:
             logger.debug(f"[{self.workflow_id}] {step_fn.__name__} step_id: {step_id} - Skipped")
             return cached_result['result']
         logger.debug(f"[{self.workflow_id}] {step_fn.__name__} step_id: {step_id} - Running")
-        result = await step_fn(**kwargs)
+        result = await step_fn(*args, **kwargs)
         self.storage.save_checkpoint(self.workflow_id, step_id, result)
         return result
 
