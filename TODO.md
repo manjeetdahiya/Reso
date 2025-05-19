@@ -1,4 +1,4 @@
-* Sleep?
+* event Class
 * API calls return and error flags
 * same workflow id can be repeated??
 * automated testing
@@ -16,3 +16,4 @@ Done
 * Storing events for replay?
 * there could be parallel waiting for events in a wf. perhaps, executor should set waiting for event in events/ and orch should match and write there
 * The log should be step name for debuggability
+* Sleep?

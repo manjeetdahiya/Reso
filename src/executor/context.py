@@ -102,6 +102,7 @@ class WorkflowContext:
         if event_name.startswith(sleep_event_name):  # event is sleep event, create a task to handle wake it
             asyncio.create_task(self.trigger_sleep_wakeup_event(event_meta['wakeup_timestamp'], event_name))
         value = await future
+        self.set_status("RUNNING")
         return value
 
     async def trigger_sleep_wakeup_event(self, wakeup_timestamp, event_name):
