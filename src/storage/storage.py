@@ -69,12 +69,13 @@ class Storage:
                     ret.append(event)
         return ret
     
-    def save_event(self, workflow_id, step_id, event_name, event_data, event_state):
+    def save_event(self, workflow_id, step_id, event_name, event_data, event_state, event_meta=None):
         self.write_json(self.get_event_path(workflow_id, step_id), {
             'workflow_id': workflow_id,
             'step_id': step_id,
             'event_name': event_name,
             'event_data': event_data,
+            'event_meta': event_meta,
             'state': event_state
         })
 
