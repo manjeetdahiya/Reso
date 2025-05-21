@@ -1,3 +1,4 @@
+* event state as enum...pydantic for json tx
 * event Class
 * WF states enum?
 * API calls return and error flags

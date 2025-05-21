@@ -1,5 +1,7 @@
 import json
+from pydantic.json import pydantic_encoder
 from pathlib import Path
+from src.models import Event, EventState
 
 class Storage:
     def __init__(self, checkpoint_dir=".checkpoints"):
@@ -44,7 +46,7 @@ class Storage:
 
     def write_json(self, path, data):
         with open(path, "w") as f:
-            json.dump(data, f)
+            json.dump(data, f, default=pydantic_encoder)
    
     def load_checkpoint(self, workflow_id, step_id):
         path = self.get_step_path(workflow_id, step_id)
@@ -64,24 +66,22 @@ class Storage:
         ret = []
         for f in dir.iterdir():
             if f.is_file():
-                event = self.read_json(f)
-                if event and event['event_name'] == event_name:
+                event_dict = self.read_json(f)
+                if event_dict and event_dict['event_name'] == event_name:
+                    event = Event(**event_dict)
                     ret.append(event)
         return ret
     
-    def save_event(self, workflow_id, step_id, event_name, event_data, event_state, event_meta=None):
-        self.write_json(self.get_event_path(workflow_id, step_id), {
-            'workflow_id': workflow_id,
-            'step_id': step_id,
-            'event_name': event_name,
-            'event_data': event_data,
-            'event_meta': event_meta,
-            'state': event_state
-        })
+    def save_event(self, event: Event):
+        # Use Pydantic's dict() for serialization; it handles enums automatically
+        self.write_json(self.get_event_path(event.workflow_id, event.step_id), event.dict())
 
     def load_event(self, workflow_id, step_id):
         path = self.get_event_path(workflow_id, step_id)
-        return self.read_json(path)
+        event_dict = self.read_json(path)
+        if event_dict:
+            return Event(**event_dict)
+        return None
 
     def set_status(self, workflow_id, status):
         path = self.get_status_path(workflow_id)

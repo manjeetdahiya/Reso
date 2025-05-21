@@ -2,6 +2,9 @@ from src.storage.storage import Storage
 import logging
 import asyncio
 from src.executor.executor import Executor
+from src.models import Event, EventState, WorkflowState
+from pydantic import BaseModel
+from typing import Optional, Any, Dict
 
 logger = logging.getLogger("reso")
 
@@ -34,7 +37,7 @@ class WorkflowContext:
         return result
 
     def submit_workflow(self, workflow_name, input):
-        self.storage.set_status(self.workflow_id, "SUBMITTED")
+        self.storage.set_status(self.workflow_id, WorkflowState.SUBMITTED.name)
         self.storage.set_workflow_info(self.workflow_id, workflow_name, input)
 
     def set_status(self, status):
@@ -51,15 +54,31 @@ class WorkflowContext:
 
     # called by Executor
     def save_event_waiting(self, event_name, step_id, event_meta=None):
-        self.storage.save_event(self.workflow_id, step_id, event_name, None, "WAITING", event_meta)
-        
+        event = Event(
+            workflow_id=self.workflow_id,
+            step_id=step_id,
+            event_name=event_name,
+            event_data=None,
+            state=EventState.WAITING,
+            event_meta=event_meta
+        )
+        self.storage.save_event(event)
+    
     # called by Orchestrator (or by Executor in case of sleep event completion)
     def save_event_completion(self, event_name, event_data):
         event_list = self.storage.find_event_logs(self.workflow_id, event_name)
         if event_list is not None:
-            for event in event_list:
-                if event['event_name'] == event_name and event['state'] == "WAITING":
-                    self.storage.save_event(self.workflow_id, event['step_id'], event_name, event_data, "COMPLETED", event_meta=event['event_meta'])
+            for event_obj in event_list:
+                if event_obj.event_name == event_name and event_obj.state == EventState.WAITING:
+                    event = Event(
+                        workflow_id=self.workflow_id,
+                        step_id=event_obj.step_id,
+                        event_name=event_name,
+                        event_data=event_data,
+                        state=EventState.COMPLETED,
+                        event_meta=event_obj.event_meta
+                    )
+                    self.storage.save_event(event)
                     return True
         else:
             return False
@@ -71,23 +90,19 @@ class WorkflowContext:
         if cached_result is not None:
             logger.debug(f"[{self.workflow_id}] {step_id} - Skipped")
             return cached_result['result']
-        
         event = self.storage.load_event(self.workflow_id, step_id)
-        
-        # event found in storage and completed. Get event data
         event_data = None
-        if event is not None and event['event_name'] == event_name and event['state'] == "COMPLETED":
+        if event is not None and event.event_name == event_name and event.state == EventState.COMPLETED:
             logger.debug(f"[{self.workflow_id}] {step_id} - Event found in storage")
-            event_data = event['event_data']
+            event_data = event.event_data
         else:
-            if event:  # event found in storage but not completed, get event_meta[IMP]
+            if event:
                 logger.debug(f"[{self.workflow_id}] {step_id} - Event found in storage, but still waiting")
-                event_meta = event["event_meta"]
+                event_meta = event.event_meta
             else:
                 logger.debug(f"[{self.workflow_id}] wait_for_event: {event_name}")
                 self.save_event_waiting(event_name, step_id, event_meta)
             event_data = await self.suspend_until_event(event_name, event_meta)
-
         self.storage.save_checkpoint(self.workflow_id, step_id, event_data)
 
     async def suspend_until_event(self, event_name, event_meta):
