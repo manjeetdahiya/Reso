@@ -3,8 +3,6 @@ import logging
 import asyncio
 from src.executor.executor import Executor
 from src.models import Event, EventState, WorkflowState
-from pydantic import BaseModel
-from typing import Optional, Any, Dict
 
 logger = logging.getLogger("reso")
 

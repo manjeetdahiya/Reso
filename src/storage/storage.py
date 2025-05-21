@@ -73,7 +73,6 @@ class Storage:
         return ret
     
     def save_event(self, event: Event):
-        # Use Pydantic's dict() for serialization; it handles enums automatically
         self.write_json(self.get_event_path(event.workflow_id, event.step_id), event.dict())
 
     def load_event(self, workflow_id, step_id):
