@@ -3,6 +3,7 @@ from src.executor.context import WorkflowContext
 import httpx
 import logging
 import asyncio
+from src.models import WorkflowState
 
 logger = logging.getLogger('reso')
 
@@ -37,10 +38,10 @@ class Orchestrator:
         await asyncio.sleep(1)
         wfs = self.storage.list_workflows()
         for wf in wfs:
-            status = wf["status"]
-            workflow_id = wf["workflow_id"]
-            workflow_name_stored = self.storage.get_workflow_info(workflow_id)["workflow_name"]
-            if workflow_name_stored == workflow_name and status != "COMPLETED":
+            state = wf.state
+            workflow_id = wf.workflow_id
+            workflow_name_stored = wf.workflow_name
+            if workflow_name_stored == workflow_name and state != WorkflowState.COMPLETED:
                 logger.info(f"Starting pending workflow {workflow_id} for {workflow_name}")
                 self._start_workflow_on_executor(workflow_id, workflow_name)
 
@@ -69,17 +70,8 @@ class Orchestrator:
         ctx = WorkflowContext(workflow_id=workflow_id, storage=self.storage, executor=None)
         return ctx.save_event_completion(event_name, event_data)
 
-    def get_workflow_status(self, workflow_id):
-        status = self.storage.get_status(workflow_id)
-        if status == None:
-            raise Exception(f"Workflow {workflow_id} not found")
-        return status
-
     async def get_workflows(self):
         return self.storage.list_workflows()
-
-    def get_active_workflows(self):
-        return [w["workflow_id"] for w in self.get_workflows() if w.get("status") == "active"]
 
     def get_executor_for_workflow(self, workflow_name):
         for executor_server, workflows in self.executors.items():

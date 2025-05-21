@@ -1,7 +1,5 @@
-import json
-from pydantic.json import pydantic_encoder
 from pathlib import Path
-from src.models import Event, EventState
+from src.models import Event, EventState, Workflow
 
 class Storage:
     def __init__(self, checkpoint_dir=".checkpoints"):
@@ -29,22 +27,19 @@ class Storage:
     def get_event_path(self, workflow_id, step_id):
         return self.get_events_path(workflow_id) / f"{step_id}.json"
 
-    def get_status_path(self, workflow_id):
-        return self.get_workflow_path(workflow_id) / "status.json"
-
-    def get_result_path(self, workflow_id):
-        return self.get_workflow_path(workflow_id) / "result.json"
-
-    def get_info_path(self, workflow_id):
-        return self.get_workflow_path(workflow_id) / "info.json"
+    def get_workflow_json_path(self, workflow_id):
+        return self.get_workflow_path(workflow_id) / "workflow.json"
 
     def read_json(self, path):
         if path.exists():
+            import json
             with open(path) as f:
                 return json.load(f)
         return None
 
     def write_json(self, path, data):
+        import json
+        from pydantic.json import pydantic_encoder
         with open(path, "w") as f:
             json.dump(data, f, default=pydantic_encoder)
    
@@ -82,21 +77,37 @@ class Storage:
             return Event(**event_dict)
         return None
 
-    def set_status(self, workflow_id, status):
-        path = self.get_status_path(workflow_id)
-        self.write_json(path, {"status": status})
+    def set_workflow_info(self, workflow_id, workflow_name, input, state):
+        path = self.get_workflow_json_path(workflow_id)
+        data = self.read_json(path) or {}
+        data["workflow_name"] = workflow_name
+        data["input"] = input
+        data["state"] = state
+        data["workflow_id"] = workflow_id
+        self.write_json(path, data)
 
-    def get_status(self, workflow_id):
-        path = self.get_status_path(workflow_id)
-        return self.read_json(path).get("status")
+    def update_state(self, workflow_id, state):
+        wf = self.get_workflow_info(workflow_id)
+        wf.state = state
+        self.write_json(self.get_workflow_json_path(workflow_id), wf.dict())
 
     def set_result(self, workflow_id, result):
-        path = self.get_result_path(workflow_id)
-        self.write_json(path, {"result": result})
+        wf = self.get_workflow_info(workflow_id)
+        wf.result = result
+        self.write_json(self.get_workflow_json_path(workflow_id), wf.dict())
+
+    def get_workflow_info(self, workflow_id):
+        path = self.get_workflow_json_path(workflow_id)
+        data = self.read_json(path) or {}
+        return Workflow(**data)
+
+    def get_state(self, workflow_id):
+        workflow = self.get_workflow_info(workflow_id)
+        return workflow.state if workflow else None
 
     def get_result(self, workflow_id):
-        path = self.get_result_path(workflow_id)
-        return self.read_json(path).get("result")
+        workflow = self.get_workflow_info(workflow_id)
+        return workflow.result if workflow else None
 
     def list_workflows(self):
         workflows = []
@@ -104,11 +115,10 @@ class Storage:
             return workflows
         for wf_dir in self.checkpoint_dir.iterdir():
             if wf_dir.is_dir():
-                status = self.get_status(wf_dir.name)
-                workflows.append({
-                    "workflow_id": wf_dir.name,
-                    "status": status
-                })
+                wf = self.get_workflow_info(wf_dir.name)
+                if wf is None:
+                    continue
+                workflows.append(wf)
         return workflows
 
     def set_config(self, config: dict):
@@ -119,14 +129,3 @@ class Storage:
 
     def get_config(self):
         return {"checkpoint_dir": str(self.checkpoint_dir)}
-
-    def set_workflow_info(self, workflow_id, workflow_name, input):
-        path = self.get_info_path(workflow_id)
-        self.write_json(path, {
-            "workflow_name": workflow_name,
-            "input": input
-        })
-    
-    def get_workflow_info(self, workflow_id):
-        path = self.get_info_path(workflow_id)
-        return self.read_json(path)

@@ -20,3 +20,10 @@ class Event(BaseModel):
     event_data: Optional[Any] = None
     state: EventState
     event_meta: Optional[Dict[str, Any]] = None
+
+class Workflow(BaseModel):
+    workflow_id: str
+    workflow_name: str
+    input: Optional[Dict[str, Any]] = None
+    state: Optional[WorkflowState] = None
+    result: Optional[Any] = None

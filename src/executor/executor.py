@@ -3,6 +3,7 @@ from src.executor.server import Server
 import httpx
 import logging
 import asyncio
+from src.models import WorkflowState
 
 logger = logging.getLogger('reso')
 logger.setLevel(logging.DEBUG)
@@ -42,21 +43,21 @@ class Executor:
         from src.executor.context import WorkflowContext
         context = WorkflowContext(workflow_id, self.storage, self)
         wf_info = context.storage.get_workflow_info(workflow_id)
-        workflow_name = wf_info["workflow_name"]
-        input = wf_info["input"]
+        workflow_name = wf_info.workflow_name
+        input = wf_info.input
         
         if workflow_name not in self.workflow_mapping:
             raise Exception(f"Workflow {workflow_name} not registered")
         
         workflow_func = self.workflow_mapping[workflow_name]
         try:
-            context.set_status("RUNNING")
+            context.update_state(WorkflowState.RUNNING)
             result = await workflow_func(context, **input)
-            context.set_status("COMPLETED")
+            context.update_state(WorkflowState.COMPLETED)
             context.set_result(result)
             logger.debug(f"Workflow {workflow_id} executed successfully")
         except Exception:
-            context.set_status("FAILED")
+            context.update_state(WorkflowState.FAILED)
             logger.debug(f"Workflow {workflow_id} failed")
             raise
 

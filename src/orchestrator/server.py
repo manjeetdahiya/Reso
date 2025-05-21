@@ -4,6 +4,7 @@ from src.orchestrator.orchestrator import Orchestrator
 from src.executor.server import WorkflowEventRequest
 import httpx
 import logging
+from src.models import WorkflowState
 
 logger = logging.getLogger('reso')
 logger.setLevel(logging.DEBUG)
@@ -31,16 +32,8 @@ async def startup_event():
     app.state.orchestrator = Orchestrator()
 
 def build_workflow_status_response(workflow_id, orchestrator):
-    status = orchestrator.storage.get_status(workflow_id)
-    ret = {
-        "workflow_id": workflow_id,
-        "status": status,
-        "executor": orchestrator.get_executor_for_workflow_id(workflow_id)
-    }
-    if status == "COMPLETED":
-        result = orchestrator.storage.get_result(workflow_id)
-        ret["result"] = result
-    return ret
+    wf = orchestrator.storage.get_workflow_info(workflow_id)
+    return wf
 
 @app.post("/workflow")
 def start_workflow(req: WorkflowRequest, request: Request):
