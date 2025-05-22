@@ -1,5 +1,6 @@
 from pathlib import Path
 from src.models import Event, EventState, Workflow
+import portalocker
 
 class Storage:
     def __init__(self, checkpoint_dir=".checkpoints"):
@@ -33,15 +34,23 @@ class Storage:
     def read_json(self, path):
         if path.exists():
             import json
-            with open(path) as f:
-                return json.load(f)
+            with open(path, "r") as f:
+                portalocker.lock(f, portalocker.LOCK_SH)
+                try:
+                    return json.load(f)
+                finally:
+                    portalocker.unlock(f)
         return None
 
     def write_json(self, path, data):
         import json
         from pydantic.json import pydantic_encoder
         with open(path, "w") as f:
-            json.dump(data, f, default=pydantic_encoder)
+            portalocker.lock(f, portalocker.LOCK_EX)
+            try:
+                json.dump(data, f, default=pydantic_encoder)
+            finally:
+                portalocker.unlock(f)
    
     def load_checkpoint(self, workflow_id, step_id):
         path = self.get_step_path(workflow_id, step_id)
@@ -86,9 +95,10 @@ class Storage:
         data["workflow_id"] = workflow_id
         self.write_json(path, data)
 
-    def update_state(self, workflow_id, state):
+    def update_state(self, workflow_id, state, result=None):
         wf = self.get_workflow_info(workflow_id)
         wf.state = state
+        wf.result = result
         self.write_json(self.get_workflow_json_path(workflow_id), wf.dict())
 
     def set_result(self, workflow_id, result):

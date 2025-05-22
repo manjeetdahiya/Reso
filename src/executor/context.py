@@ -37,15 +37,6 @@ class WorkflowContext:
     def submit_workflow(self, workflow_name, input):
         self.storage.set_workflow_info(self.workflow_id, workflow_name, input, WorkflowState.SUBMITTED)
 
-    def update_state(self, state):
-        self.storage.update_state(self.workflow_id, state)
-
-    def set_result(self, result):
-        self.storage.set_result(self.workflow_id, result)
-
-    def get_result(self):
-        return self.storage.get_result(self.workflow_id)
-
     # called by Executor
     def save_event_waiting(self, event_name, step_id, event_meta=None):
         event = Event(
@@ -105,11 +96,11 @@ class WorkflowContext:
         if self.workflow_id not in self.executor.event_registry:
             self.executor.event_registry[self.workflow_id] = {}
         self.executor.event_registry[self.workflow_id][event_name] = future
-        self.update_state(WorkflowState.WAITING)
+        self.storage.update_state(self.workflow_id, WorkflowState.WAITING)
         if event_name.startswith(sleep_event_name):  # event is sleep event, create a task to handle wake it
             asyncio.create_task(self.trigger_sleep_wakeup_event(event_meta['wakeup_timestamp'], event_name))
         value = await future
-        self.update_state(WorkflowState.RUNNING)
+        self.storage.update_state(self.workflow_id, WorkflowState.RUNNING)
         return value
 
     async def trigger_sleep_wakeup_event(self, wakeup_timestamp, event_name):

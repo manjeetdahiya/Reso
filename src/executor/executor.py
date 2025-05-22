@@ -51,13 +51,12 @@ class Executor:
         
         workflow_func = self.workflow_mapping[workflow_name]
         try:
-            context.update_state(WorkflowState.RUNNING)
+            context.storage.update_state(workflow_id, WorkflowState.RUNNING)
             result = await workflow_func(context, **input)
-            context.update_state(WorkflowState.COMPLETED)
-            context.set_result(result)
+            context.storage.update_state(workflow_id, WorkflowState.COMPLETED, result=result)
             logger.debug(f"Workflow {workflow_id} executed successfully")
         except Exception:
-            context.update_state(WorkflowState.FAILED)
+            context.storage.update_state(workflow_id, WorkflowState.FAILED)
             logger.debug(f"Workflow {workflow_id} failed")
             raise
 
