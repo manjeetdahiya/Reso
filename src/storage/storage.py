@@ -4,7 +4,7 @@ import portalocker
 from src.storage.base import BaseStorage
 
 class Storage(BaseStorage):
-    def __init__(self, checkpoint_dir=".checkpoints"):
+    def __init__(self, checkpoint_dir='.checkpoints'):
         self.checkpoint_dir = Path(checkpoint_dir)
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
@@ -13,29 +13,24 @@ class Storage(BaseStorage):
         workflow_path.mkdir(parents=True, exist_ok=True)
         return workflow_path
     
-    def get_steps_path(self, workflow_id):
-        dir = self.get_workflow_path(workflow_id) / "steps"
+    def get_subdir_path(self, workflow_id, subdir):
+        dir = self.get_workflow_path(workflow_id) / subdir
         dir.mkdir(parents=True, exist_ok=True)
         return dir
 
-    def get_events_path(self, workflow_id):
-        dir = self.get_workflow_path(workflow_id) / "events"
-        dir.mkdir(parents=True, exist_ok=True)
-        return dir
-    
     def get_step_path(self, workflow_id, step_id):
-        return self.get_steps_path(workflow_id) / f"{step_id}.json"
+        return self.get_subdir_path(workflow_id, 'steps') / f'{step_id}.json'
 
     def get_event_path(self, workflow_id, step_id):
-        return self.get_events_path(workflow_id) / f"{step_id}.json"
+        return self.get_subdir_path(workflow_id, 'events') / f'{step_id}.json'
 
     def get_workflow_json_path(self, workflow_id):
-        return self.get_workflow_path(workflow_id) / "workflow.json"
+        return self.get_workflow_path(workflow_id) / 'workflow.json'
 
     def read_json(self, path):
         if path.exists():
             import json
-            with open(path, "r") as f:
+            with open(path, 'r') as f:
                 portalocker.lock(f, portalocker.LOCK_SH)
                 try:
                     return json.load(f)
@@ -46,7 +41,7 @@ class Storage(BaseStorage):
     def write_json(self, path, data):
         import json
         from pydantic.json import pydantic_encoder
-        with open(path, "w") as f:
+        with open(path, 'w') as f:
             portalocker.lock(f, portalocker.LOCK_EX)
             try:
                 json.dump(data, f, default=pydantic_encoder)
@@ -121,10 +116,10 @@ class Storage(BaseStorage):
         return workflows
 
     def set_config(self, config: dict):
-        checkpoint_dir = config.get("checkpoint_dir")
+        checkpoint_dir = config.get('checkpoint_dir')
         if checkpoint_dir is not None:
             from pathlib import Path
             self.checkpoint_dir = Path(checkpoint_dir)
 
     def get_config(self):
-        return {"checkpoint_dir": str(self.checkpoint_dir)}
+        return {'checkpoint_dir': str(self.checkpoint_dir)}

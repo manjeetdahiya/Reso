@@ -3,15 +3,15 @@ from pydantic import BaseModel
 from typing import Optional, Any, Dict
 
 class WorkflowState(Enum):
-    SUBMITTED = "SUBMITTED"
-    RUNNING = "RUNNING"
-    COMPLETED = "COMPLETED"
-    FAILED = "FAILED"
-    WAITING = "WAITING"
+    SUBMITTED = 'SUBMITTED'
+    RUNNING = 'RUNNING'
+    COMPLETED = 'COMPLETED'
+    FAILED = 'FAILED'
+    WAITING = 'WAITING'
 
 class EventState(Enum):
-    WAITING = "WAITING"
-    COMPLETED = "COMPLETED"
+    WAITING = 'WAITING'
+    COMPLETED = 'COMPLETED'
 
 class Event(BaseModel):
     workflow_id: str

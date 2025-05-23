@@ -4,9 +4,9 @@ import asyncio
 from src.executor.executor import Executor
 from src.models import Event, EventState, WorkflowState
 
-logger = logging.getLogger("reso")
+logger = logging.getLogger('reso')
 
-sleep_event_name = "__sleep_reso__"
+sleep_event_name = '__sleep_reso__'
 
 class WorkflowContext:
     def __init__(self, workflow_id, storage, executor):
@@ -27,9 +27,9 @@ class WorkflowContext:
         step_id = self._step_id(step_fn.__name__, step_nr)
         cached_result = self.storage.get_checkpoint(self.workflow_id, step_id)
         if cached_result is not None:
-            logger.debug(f"[{self.workflow_id}] {step_fn.__name__} step_id: {step_id} - Skipped")
+            logger.debug(f'[{self.workflow_id}] {step_fn.__name__} step_id: {step_id} - Skipped')
             return cached_result['result']
-        logger.debug(f"[{self.workflow_id}] {step_fn.__name__} step_id: {step_id} - Running")
+        logger.debug(f'[{self.workflow_id}] {step_fn.__name__} step_id: {step_id} - Running')
         result = await step_fn(*args, **kwargs)
         self.storage.set_checkpoint(self.workflow_id, step_id, result)
         return result
@@ -73,25 +73,25 @@ class WorkflowContext:
         step_id = self._step_id(f'wait_for_event.{event_name}', step_nr)
         cached_result = self.storage.get_checkpoint(self.workflow_id, step_id)
         if cached_result is not None:
-            logger.debug(f"[{self.workflow_id}] {step_id} - Skipped")
+            logger.debug(f'[{self.workflow_id}] {step_id} - Skipped')
             return cached_result['result']
         event = self.storage.get_event(self.workflow_id, step_id)
         event_data = None
         if event is not None and event.event_name == event_name and event.state == EventState.COMPLETED:
-            logger.debug(f"[{self.workflow_id}] {step_id} - Event found in storage")
+            logger.debug(f'[{self.workflow_id}] {step_id} - Event found in storage')
             event_data = event.event_data
         else:
             if event:
-                logger.debug(f"[{self.workflow_id}] {step_id} - Event found in storage, but still waiting")
+                logger.debug(f'[{self.workflow_id}] {step_id} - Event found in storage, but still waiting')
                 event_meta = event.event_meta
             else:
-                logger.debug(f"[{self.workflow_id}] wait_for_event: {event_name}")
+                logger.debug(f'[{self.workflow_id}] wait_for_event: {event_name}')
                 self.save_event_waiting(event_name, step_id, event_meta)
             event_data = await self.suspend_until_event(event_name, event_meta)
         self.storage.set_checkpoint(self.workflow_id, step_id, event_data)
 
     async def suspend_until_event(self, event_name, event_meta):
-        logger.debug(f"[{self.workflow_id}] Suspending until event: {event_name}")
+        logger.debug(f'[{self.workflow_id}] Suspending until event: {event_name}')
         future = asyncio.Future()
         if self.workflow_id not in self.executor.event_registry:
             self.executor.event_registry[self.workflow_id] = {}
@@ -109,10 +109,10 @@ class WorkflowContext:
         now_dt = datetime.now()
         if now_dt < wakeup_dt:
             sleep_duration = (wakeup_dt - now_dt).total_seconds()
-            logger.debug(f"[{self.workflow_id}] Sleeping for {sleep_duration} seconds")
+            logger.debug(f'[{self.workflow_id}] Sleeping for {sleep_duration} seconds')
             await asyncio.sleep(sleep_duration)
         else:
-            logger.debug(f"[{self.workflow_id}] Wakeup time already passed, skipping sleep")
+            logger.debug(f'[{self.workflow_id}] Wakeup time already passed, skipping sleep')
         self.save_event_completion(event_name, True)
         await self.executor.send_event(self.workflow_id, event_name, True)
 
@@ -120,4 +120,4 @@ class WorkflowContext:
         from datetime import datetime, timedelta
         wakeup_dt = datetime.now() + timedelta(seconds=seconds)
         wakeup_ts_iso = wakeup_dt.isoformat()
-        await self.wait_for_event(sleep_event_name, event_meta={"wakeup_timestamp": wakeup_ts_iso})
+        await self.wait_for_event(sleep_event_name, event_meta={'wakeup_timestamp': wakeup_ts_iso})

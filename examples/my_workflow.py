@@ -2,7 +2,7 @@ import asyncio
 
 async def get_email(user_id):
     await asyncio.sleep(5)
-    return f"{user_id}@mail.com"
+    return f'{user_id}@mail.com'
 
 async def send_email(email_id):
     await asyncio.sleep(5)

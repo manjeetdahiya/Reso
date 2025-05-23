@@ -3,7 +3,7 @@ from pydantic import BaseModel
 import asyncio
 import logging
 
-logger = logging.getLogger("reso")
+logger = logging.getLogger('reso')
 
 class WorkflowRequest(BaseModel):
     workflow_id: str
@@ -24,26 +24,26 @@ class Server:
             try:
                 task.result()
             except Exception as e:
-                logger.error(f"Background workflow task failed: {e}")
+                logger.error(f'Background workflow task failed: {e}')
 
-        @self.app.post("/workflow")
+        @self.app.post('/workflow')
         async def start_workflow(req: WorkflowRequest):
             try:
                 task = asyncio.create_task(self.executor.execute_workflow(req.workflow_id))
                 task.add_done_callback(handle_task_exception)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=str(e))
-            return {"status": "started", "workflow_id": req.workflow_id}
+            return {'status': 'started', 'workflow_id': req.workflow_id}
         
-        @self.app.post("/event")
+        @self.app.post('/event')
         async def send_event(req: WorkflowEventRequest):
             try:
                 await self.executor.send_event(req.workflow_id, req.event_name, req.event_data)
             except Exception as e:
                 raise HTTPException(status_code=400, detail=str(e))
-            return {"status": "event sent", "workflow_id": req.workflow_id}
+            return {'status': 'event sent', 'workflow_id': req.workflow_id}
 
-        @self.app.on_event("startup")
+        @self.app.on_event('startup')
         async def startup_event():
             asyncio.create_task(self.executor._register_workflows())
-            logger.debug("Executor server started")
+            logger.debug('Executor server started')
