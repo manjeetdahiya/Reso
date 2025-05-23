@@ -60,7 +60,7 @@ class Storage(BaseStorage):
         })
 
     def find_event_logs(self, workflow_id, event_name):
-        dir = self.get_events_path(workflow_id)
+        dir = self.get_subdir_path(workflow_id, 'events')
         if not dir.exists():
             return None
         ret = []
