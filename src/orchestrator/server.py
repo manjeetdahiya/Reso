@@ -32,7 +32,7 @@ async def startup_event():
     app.state.orchestrator = Orchestrator()
 
 def build_workflow_status_response(workflow_id, orchestrator):
-    wf = orchestrator.storage.get_workflow_info(workflow_id)
+    wf = orchestrator.storage.get_workflow(workflow_id)
     return wf
 
 @app.post("/workflow")

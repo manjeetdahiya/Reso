@@ -42,7 +42,7 @@ class Executor:
     async def execute_workflow(self, workflow_id):
         from src.executor.context import WorkflowContext
         context = WorkflowContext(workflow_id, self.storage, self)
-        wf_info = context.storage.get_workflow_info(workflow_id)
+        wf_info = context.storage.get_workflow(workflow_id)
         workflow_name = wf_info.workflow_name
         input = wf_info.input
         

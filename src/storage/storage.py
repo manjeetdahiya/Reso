@@ -1,8 +1,9 @@
 from pathlib import Path
 from src.models import Event, EventState, Workflow
 import portalocker
+from src.storage.base import BaseStorage
 
-class Storage:
+class Storage(BaseStorage):
     def __init__(self, checkpoint_dir=".checkpoints"):
         self.checkpoint_dir = Path(checkpoint_dir)
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
@@ -52,11 +53,11 @@ class Storage:
             finally:
                 portalocker.unlock(f)
    
-    def load_checkpoint(self, workflow_id, step_id):
+    def get_checkpoint(self, workflow_id, step_id):
         path = self.get_step_path(workflow_id, step_id)
         return self.read_json(path)
 
-    def save_checkpoint(self, workflow_id, step_id, result):
+    def set_checkpoint(self, workflow_id, step_id, result):
         self.write_json(self.get_step_path(workflow_id, step_id), {
             'workflow_id': workflow_id,
             'step_id': step_id,
@@ -76,48 +77,36 @@ class Storage:
                     ret.append(event)
         return ret
     
-    def save_event(self, event: Event):
+    def set_event(self, event: Event):
         self.write_json(self.get_event_path(event.workflow_id, event.step_id), event.dict())
 
-    def load_event(self, workflow_id, step_id):
+    def get_event(self, workflow_id, step_id):
         path = self.get_event_path(workflow_id, step_id)
         event_dict = self.read_json(path)
         if event_dict:
             return Event(**event_dict)
         return None
 
-    def set_workflow_info(self, workflow_id, workflow_name, input, state):
-        path = self.get_workflow_json_path(workflow_id)
-        data = self.read_json(path) or {}
-        data["workflow_name"] = workflow_name
-        data["input"] = input
-        data["state"] = state
-        data["workflow_id"] = workflow_id
-        self.write_json(path, data)
+    def set_workflow(self, workflow_id, workflow_name, input, state):
+        wf = Workflow(
+            workflow_id=workflow_id,
+            workflow_name=workflow_name,
+            input=input,
+            state=state,
+            result=None
+        )
+        self.write_json(self.get_workflow_json_path(workflow_id), wf.dict())
 
     def update_state(self, workflow_id, state, result=None):
-        wf = self.get_workflow_info(workflow_id)
+        wf = self.get_workflow(workflow_id)
         wf.state = state
         wf.result = result
         self.write_json(self.get_workflow_json_path(workflow_id), wf.dict())
 
-    def set_result(self, workflow_id, result):
-        wf = self.get_workflow_info(workflow_id)
-        wf.result = result
-        self.write_json(self.get_workflow_json_path(workflow_id), wf.dict())
-
-    def get_workflow_info(self, workflow_id):
+    def get_workflow(self, workflow_id):
         path = self.get_workflow_json_path(workflow_id)
         data = self.read_json(path) or {}
         return Workflow(**data)
-
-    def get_state(self, workflow_id):
-        workflow = self.get_workflow_info(workflow_id)
-        return workflow.state if workflow else None
-
-    def get_result(self, workflow_id):
-        workflow = self.get_workflow_info(workflow_id)
-        return workflow.result if workflow else None
 
     def list_workflows(self):
         workflows = []
@@ -125,7 +114,7 @@ class Storage:
             return workflows
         for wf_dir in self.checkpoint_dir.iterdir():
             if wf_dir.is_dir():
-                wf = self.get_workflow_info(wf_dir.name)
+                wf = self.get_workflow(wf_dir.name)
                 if wf is None:
                     continue
                 workflows.append(wf)
